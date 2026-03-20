@@ -1,0 +1,4 @@
+-- database: ./database.db
+
+SELECT * FROM tasks
+ORDER BY `id` ASC;
