@@ -41,6 +41,15 @@ def edit_task(id: int, task: str):
     conn.commit()
     conn.close()
 
+def delete_task(id: int,):
+    conn = sqlite3.Connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute(queries.delete_task,(id,))
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
         
 
 
