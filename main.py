@@ -1,60 +1,77 @@
 import flet as ft
-import config
-from db.main_db import create_task , init_db,edit_task,delete_task
 
+import config
+from db.main_db import (
+    create_task,
+    delete_task,
+    edit_done,
+    edit_task,
+    get_tasks,
+    init_db,
+    delete_done
+)
+from ui import create_ui_task
 
 
 def main(page: ft.Page):
     main_row = ft.Row()
     tasks_column = ft.Column()
 
+    def get_tasks_from_db():
+        data = get_tasks()
+
+        for task_id, task_text, task_done in data:
+            tasks_column.controls.append(
+                create_ui_task(
+                    task_id,
+                    task_text,
+                    delete_task_from_ui,
+                    edit_task,
+                    edit_done,
+                    task_done,
+                )
+            )
+
+    def delete_task_from_ui(task, task_id):
+        delete_task(task_id)
+        tasks_column.controls.remove(task)
+
     def insert_task(event: ft.Event):
         value = task_text.value.strip()
 
         if value:
             task_id = create_task(value)
+            task_row = create_ui_task(
+                task_id, value, delete_task_from_ui, edit_task, edit_done
+            )
+            tasks_column.controls.append(task_row)
 
-            task_row = ft.TextField(value=value, expand=True, read_only=True)
+    
+    def del_done(_): 
+        delete_done()
+        tasks_done = []
+        for task in tasks_column.controls:
+           if task.controls[-1].value:
+            tasks_done.append(task)
+        for task in tasks_done:
+            tasks_column.controls.remove(task)
 
-            def toggle_readonly(_):
-                if task_row.read_only:
-                    task_row.read_only = False
-                else:
-                    task_row.read_only = True
 
-            def submit(_):
-                edited_value = task_row.value.strip()
-                if edited_value:
-                    edit_task(task_id, edited_value)
-                    task_row.read_only = True
-                   
+    task_text = ft.TextField(label="Задача:", expand=True, on_submit=insert_task)
+    enter_button = ft.TextButton(
+        content="Создать", icon=ft.Icons.ARROW_FORWARD, on_click=insert_task
+    )
+    del_done_task = ft.TextButton(content="Очистить выполненные", icon=ft.Icons.DELETE_FOREVER,on_click=del_done)
 
-            def delete(_):
-                delete_task(task_id)
-                tasks_column.controls.clear()
-            
+    get_tasks_from_db()
 
-            toggle_button = ft.IconButton(icon=ft.Icons.EDIT, on_click=toggle_readonly)
-            submit_button = ft.IconButton(icon=ft.Icons.SAVE, on_click=submit)
-            delete_button = ft.IconButton(icon=ft.Icons.DELETE,icon_color=ft.Colors.RED_900, on_click=delete)
-
-            task = ft.Row([task_row,toggle_button,submit_button,delete_button ])
-
-            tasks_column.controls.append(task)
-            task_text.value = ""
-            
-
-    task_text = ft.TextField(label="Task", expand=True, on_submit=insert_task)
-    enter_button = ft.TextButton("Create", icon=ft.Icons.ARROW_FORWARD, on_click=insert_task)
-
-    main_row.controls = [task_text, enter_button]
+    main_row.controls = [task_text, enter_button,del_done_task]
 
     page.add(main_row, tasks_column)
-   
 
 
-
-
-if __name__=="__main__":
+if __name__ == "__main__":
     init_db(config.db_path)
     ft.run(main, view=ft.AppView.WEB_BROWSER)
+
+      
